@@ -21,13 +21,27 @@ public abstract class Entity {
         this.immunity = new Random().nextDouble();
     }
 
-    public void move(Tile[][] board, int width, int height) {
+    public final void performTurn(Tile[][] board, int width, int height) {
+        move(board, width, height);
+        performSpecialAction();
+        updateHealthStatus();
+    }
+
+    private void move(Tile[][] board, int width, int height) {
         movementStrategy.move(this, board, width, height);
+    }
+
+    protected void performSpecialAction() {
+
+    }
+
+    private void updateHealthStatus() {
+        double currentDeathRate = SimulationConfig.getInstance().deathRate;
+        healthState.passTurn(this, currentDeathRate);
     }
 
     public void getExposed(double contagiousness) { healthState.handleExposure(this, contagiousness); }
     public void receiveTreatment(double healRate, double contagiousness) { healthState.handleTreatment(this, healRate, contagiousness); }
-    public void passTurn(double deathRate) { healthState.passTurn(this, deathRate); }
 
     public void changeState(HealthState newState) { this.healthState = newState; }
     public void decreaseHealth(double amount) { this.health -= amount; }

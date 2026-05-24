@@ -1,5 +1,6 @@
 package org.example.model;
 
+import org.example.observer.SimulationObserver;
 import org.example.state.DeadState;
 import org.example.state.InfectedState;
 
@@ -13,44 +14,27 @@ public class Board {
     public final int width = 400;
     public final int height = 400;
 
-    public final int speed;
-    public final double contagiousness;
-    public final double deathRate;
-    public final double healRate;
-    public final int delay;
-    public final double density;
-    public final double scale;
-    public final int maxPeoplePerTile;
-    public final int maxAnimalsPerTile;
-    public int iter;
-
     private Tile[][] boardTable = new Tile[width][height];
     private List<Entity> population = new ArrayList<>();
     private List<Plane> planes = new ArrayList<>();
     private List<Island> islands = new ArrayList<>();
+    private List<SimulationObserver> observers = new ArrayList<>();
 
     private int tickCount = 0;
     private final Random rand = new Random();
 
-    public Board(int speed, double contagiousness, double deathRate, double healRate,
-                 int delay, double density, double scale,
-                 int maxPeople, int maxAnimals, int iter) {
-        this.speed = speed;
-        this.contagiousness = contagiousness / 100.0;
-        this.deathRate = deathRate / 100.0;
-        this.healRate = healRate / 100.0;
-        this.density = density / 100.0;
-        this.delay = delay;
-        this.scale = scale / 10.0;
-        this.maxPeoplePerTile = maxPeople;
-        this.maxAnimalsPerTile = maxAnimals;
-        this.iter = iter;
-
+    public Board() {
         generateMap();
     }
 
+    public void addObserver(SimulationObserver observer) {
+        observers.add(observer);
+    }
+
     private void generateMap() {
+        SimulationConfig config = SimulationConfig.getInstance();
         int[][] gradientValues = generateGradientValues();
+
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 double nx = x / (double) width;
@@ -62,18 +46,20 @@ public class Board {
                 boardTable[x][y] = new Tile(baseGray, x, y);
 
                 if (boardTable[x][y].isLand()) {
-                    if (rand.nextDouble() < density) {
-                        int number = rand.nextInt(maxPeoplePerTile + 1);
+                    if (rand.nextDouble() < config.density) {
+                        int number = rand.nextInt(config.maxPeoplePerTile + 1);
                         for (int z = 0; z < number; z++) {
-                            Human human = new Human(x, y);
+                            // UŻYCIE FABRYKI
+                            Human human = EntityFactory.createHuman(x, y);
                             boardTable[x][y].addEntity(human);
                             population.add(human);
                         }
                     }
                     if (rand.nextDouble() < 0.05) {
-                        int number = rand.nextInt(maxAnimalsPerTile + 1);
+                        int number = rand.nextInt(config.maxAnimalsPerTile + 1);
                         for (int z = 0; z < number; z++) {
-                            Animal animal = rand.nextBoolean() ? new Rat(x, y) : new Bat(x, y);
+
+                            Animal animal = rand.nextBoolean() ? EntityFactory.createRat(x, y) : EntityFactory.createBat(x, y);
                             boardTable[x][y].addEntity(animal);
                             population.add(animal);
                         }
@@ -95,12 +81,14 @@ public class Board {
 
     public void tick() {
         tickCount++;
+        SimulationConfig config = SimulationConfig.getInstance();
 
         for (Entity entity : population) {
             boardTable[entity.getPosX()][entity.getPosY()].removeEntity(entity);
-            entity.move(boardTable, width, height);
+            entity.performTurn(boardTable, width, height);
             boardTable[entity.getPosX()][entity.getPosY()].addEntity(entity);
         }
+
         for (Plane plane : planes) {
             boardTable[plane.getPosX()][plane.getPosY()].getPlanes().remove(plane);
             plane.Move();
@@ -115,41 +103,31 @@ public class Board {
                     if (e.getHealthState().canInfectOthers()) { hasInfected = true; break; }
                 }
                 if (hasInfected) {
-                    for (Entity e : tile.getEntities()) e.getExposed(contagiousness);
+                    for (Entity e : tile.getEntities()) e.getExposed(config.contagiousness);
                 }
             }
         }
 
-        for (Entity e : population) e.passTurn(deathRate);
-
-        if (tickCount >= delay) {
+        if (tickCount >= config.delay) {
             if (tickCount % 2 == 0) {
-                for (int k = 0; k < iter; k++) {
+                for (int k = 0; k < config.iter; k++) {
                     int x = rand.nextInt(width);
                     int y = rand.nextInt(height);
-                    for (Entity e : boardTable[x][y].getEntities()) e.receiveTreatment(healRate, contagiousness);
+                    for (Entity e : boardTable[x][y].getEntities()) {
+                        e.receiveTreatment(config.healRate, config.contagiousness);
+                    }
                 }
-                if (iter < (height * height) / 150) iter++;
+                if (config.iter < (height * height) / 150) config.iter++;
             }
         }
+
+        notifyObservers();
     }
 
-    public void showStats() {
-        int healthy = 0, dead = 0, infected = 0;
-        int humanCount = 0;
-        for (Entity e : population) {
-            if(e instanceof Human) {
-                humanCount++;
-                if (e.getHealthState() instanceof DeadState) dead++;
-                else if (e.getHealthState() instanceof InfectedState) infected++;
-                else healthy++;
-            }
+    private void notifyObservers() {
+        for (SimulationObserver observer : observers) {
+            observer.onSimulationTick(this);
         }
-        if(humanCount == 0) return;
-        System.out.println("________________________________________");
-        System.out.println("Healthy " + (int) (healthy * 100.0 / humanCount) + "%");
-        System.out.println("Infected " + (int) (infected * 100.0 / humanCount) + "%");
-        System.out.println("Dead " + (int) (dead * 100.0 / humanCount) + "%");
     }
 
     private void groupIslands() {
@@ -282,4 +260,6 @@ public class Board {
     }
 
     public Tile[][] getBoardTable() { return boardTable; }
+    public List<Entity> getPopulation() { return population; }
+    public List<Island> getIslands() { return islands; }
 }

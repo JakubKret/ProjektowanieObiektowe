@@ -1,6 +1,7 @@
 package org.example.ui;
 
 import org.example.model.Board;
+import org.example.model.SimulationConfig;
 import org.example.model.Tile;
 
 import javax.swing.*;
@@ -20,7 +21,7 @@ public class SimulationPanel extends JPanel {
         Tile[][] table = board.getBoardTable();
         for (int x = 0; x < board.width; x++) {
             for (int y = 0; y < board.height; y++) {
-                int rgb = table[x][y].getTileRGBColor(board.maxPeoplePerTile);
+                int rgb = table[x][y].getTileRGBColor(SimulationConfig.getInstance().maxPeoplePerTile);
                 image.setRGB(x, y, rgb);
             }
         }
@@ -31,7 +32,7 @@ public class SimulationPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        g2d.scale(board.scale, board.scale);
+        g2d.scale(SimulationConfig.getInstance().scale, SimulationConfig.getInstance().scale);
         g.drawImage(image, 0, 0, this);
     }
 }

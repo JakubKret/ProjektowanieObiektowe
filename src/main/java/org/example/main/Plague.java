@@ -1,39 +1,37 @@
 package org.example.main;
 
 import org.example.model.Board;
+import org.example.model.SimulationConfig;
+import org.example.observer.ConsoleStatsLogger;
 import org.example.ui.ConfigScreen;
 import org.example.ui.SimulationWindow;
 
 public class Plague {
     public static void main(String[] args) {
-        ConfigScreen.ConfigListener listener = new ConfigScreen.ConfigListener() {
-            @Override
-            public void onConfigSelected(int speed, double contagiousness, double deathRate, double healRate,
-                                         int delay, double density, double scale,
-                                         int maxPeople, int maxAnimals, int iter) {
+        ConfigScreen.ConfigListener listener = (speed, contagiousness, deathRate, healRate, delay, density, scale, maxPeople, maxAnimals, iter) -> {
 
-                Board board = new Board(speed, contagiousness, deathRate, healRate, delay, density, scale, maxPeople, maxAnimals, iter);
+            SimulationConfig.initialize(speed, contagiousness, deathRate, healRate, delay, density, scale, maxPeople, maxAnimals, iter);
 
+            Board board = new Board();
 
-                SimulationWindow window = new SimulationWindow(board);
-                window.display();
+            SimulationWindow window = new SimulationWindow(board);
+            window.display();
 
-                board.patientZero();
+            board.addObserver(window);
+            board.addObserver(new ConsoleStatsLogger());
 
-                new Thread(() -> {
-                    try {
-                        while (true) {
-                            Thread.sleep(board.speed);
+            board.patientZero();
 
-                            board.tick();
-                            window.updateGraphics();
-                            board.showStats();
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+            new Thread(() -> {
+                try {
+                    while (true) {
+                        Thread.sleep(SimulationConfig.getInstance().speed);
+                        board.tick();
                     }
-                }).start();
-            }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
         };
 
         javax.swing.SwingUtilities.invokeLater(() -> new ConfigScreen(listener).setVisible(true));
