@@ -24,7 +24,6 @@ public class Board {
     private final Random rand = new Random();
 
     public Board() {
-        generateMap();
     }
 
     public void addObserver(SimulationObserver observer) {
@@ -196,7 +195,7 @@ public class Board {
         return values;
     }
 
-    private static double noise(double xin, double yin) {
+    public static double noise(double xin, double yin) {
         double s = (xin + yin) * 0.5 * (Math.sqrt(3.0) - 1.0);
         int i = fastFloor(xin + s);
         int j = fastFloor(yin + s);
@@ -262,4 +261,8 @@ public class Board {
     public Tile[][] getBoardTable() { return boardTable; }
     public List<Entity> getPopulation() { return population; }
     public List<Island> getIslands() { return islands; }
+    public void setBoardTable(Tile[][] table) { this.boardTable = table; }
+    public void addEntityToPopulation(Entity e) { this.population.add(e); }
+    public void addIsland(Island island) { this.islands.add(island); }
+    public void addPlane(Plane plane) { this.planes.add(plane); }
 }

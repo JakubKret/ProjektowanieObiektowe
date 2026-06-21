@@ -1,7 +1,6 @@
 package org.example.main;
 
-import org.example.model.Board;
-import org.example.model.SimulationConfig;
+import org.example.model.*;
 import org.example.observer.ConsoleStatsLogger;
 import org.example.ui.ConfigScreen;
 import org.example.ui.SimulationWindow;
@@ -12,7 +11,9 @@ public class Plague {
 
             SimulationConfig.initialize(speed, contagiousness, deathRate, healRate, delay, density, scale, maxPeople, maxAnimals, iter);
 
-            Board board = new Board();
+            BoardBuilder builder = new EpidemicBoardBuilder();
+            SimulationDirector director = new SimulationDirector(builder);
+            Board board = director.constructStandardBoard();
 
             SimulationWindow window = new SimulationWindow(board);
             window.display();
