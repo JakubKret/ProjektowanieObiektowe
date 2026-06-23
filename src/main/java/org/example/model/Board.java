@@ -1,14 +1,11 @@
 package org.example.model;
 
 import org.example.observer.SimulationObserver;
-import org.example.state.DeadState;
 import org.example.state.InfectedState;
 
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Stack;
 
 public class Board {
     public final int width = 400;
@@ -28,47 +25,6 @@ public class Board {
 
     public void addObserver(SimulationObserver observer) {
         observers.add(observer);
-    }
-
-    private void generateMap() {
-        SimulationConfig config = SimulationConfig.getInstance();
-        int[][] gradientValues = generateGradientValues();
-
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                double nx = x / (double) width;
-                double ny = y / (double) height;
-                double noiseValue = noise(nx * 10, ny * 10);
-                int noiseGray = (int) ((noiseValue + 1) * 127.5);
-                int baseGray = fastFloor((noiseGray + fastFloor(1.75 * gradientValues[x][y])) / 2.75);
-
-                boardTable[x][y] = new Tile(baseGray, x, y);
-
-                if (boardTable[x][y].isLand()) {
-                    if (rand.nextDouble() < config.density) {
-                        int number = rand.nextInt(config.maxPeoplePerTile + 1);
-                        for (int z = 0; z < number; z++) {
-                            // UŻYCIE FABRYKI
-                            Human human = EntityFactory.createHuman(x, y);
-                            boardTable[x][y].addEntity(human);
-                            population.add(human);
-                        }
-                    }
-                    if (rand.nextDouble() < 0.05) {
-                        int number = rand.nextInt(config.maxAnimalsPerTile + 1);
-                        for (int z = 0; z < number; z++) {
-
-                            Animal animal = rand.nextBoolean() ? EntityFactory.createRat(x, y) : EntityFactory.createBat(x, y);
-                            boardTable[x][y].addEntity(animal);
-                            population.add(animal);
-                        }
-                    }
-                }
-            }
-        }
-        groupIslands();
-        generateAirports();
-        createPlanes();
     }
 
     public void patientZero() {
@@ -129,72 +85,6 @@ public class Board {
         }
     }
 
-    private void groupIslands() {
-        ArrayList<ArrayList<Tile>> lands = findIslands();
-        for (ArrayList<Tile> islandTiles : lands) islands.add(new Island(islandTiles));
-    }
-
-    private ArrayList<ArrayList<Tile>> findIslands() {
-        ArrayList<ArrayList<Tile>> lands = new ArrayList<>();
-        boolean[][] visited = new boolean[width][height];
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                if (boardTable[i][j].isLand() && !visited[i][j]) {
-                    ArrayList<Tile> islandTiles = new ArrayList<>();
-                    dfs(visited, i, j, islandTiles);
-                    lands.add(islandTiles);
-                }
-            }
-        }
-        return lands;
-    }
-
-    private void dfs(boolean[][] visited, int row, int col, ArrayList<Tile> islandTiles) {
-        int[] rowDir = {-1, 1, 0, 0};
-        int[] colDir = {0, 0, -1, 1};
-        Stack<int[]> stack = new Stack<>();
-        stack.push(new int[]{row, col});
-
-        while (!stack.isEmpty()) {
-            int[] current = stack.pop();
-            int r = current[0];
-            int c = current[1];
-
-            if (r < 0 || r >= width || c < 0 || c >= height || visited[r][c] || !boardTable[r][c].isLand()) continue;
-
-            visited[r][c] = true;
-            islandTiles.add(boardTable[r][c]);
-
-            for (int k = 0; k < 4; k++) stack.push(new int[]{r + rowDir[k], c + colDir[k]});
-        }
-    }
-
-    private void generateAirports() {
-        for (Island island : islands) {
-            int r = rand.nextInt(island.getIslandLand().size());
-            island.setAirport(island.getIslandLand().get(r));
-            island.getIslandLand().get(r).setAirport();
-        }
-    }
-
-    private void createPlanes() {
-        for (Island island : islands) planes.add(new Plane(island.getAirport().getPosX(), island.getAirport().getPosY(), (ArrayList<Island>)islands, boardTable));
-    }
-
-    private int[][] generateGradientValues() {
-        int[][] values = new int[width][height];
-        Point2D center = new Point2D.Float(fastFloor(width / 2.0), fastFloor(height / 2.0));
-        float radius = fastFloor(Math.max(width, height) / 1.25);
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                double dx = x - center.getX();
-                double dy = y - center.getY();
-                values[x][y] = (int) (255 * Math.min(Math.sqrt(dx * dx + dy * dy) / radius, 1.0));
-            }
-        }
-        return values;
-    }
-
     public static double noise(double xin, double yin) {
         double s = (xin + yin) * 0.5 * (Math.sqrt(3.0) - 1.0);
         int i = fastFloor(xin + s);
@@ -233,7 +123,7 @@ public class Board {
     }
 
     private static double dot(int[] g, double x, double y) { return g[0] * x + g[1] * y; }
-    private static int fastFloor(double x) { return x > 0 ? (int) x : (int) x - 1; }
+    public static int fastFloor(double x) { return x > 0 ? (int) x : (int) x - 1; }
 
     private static final int[][] GRAD3 = {
             {1, 1, 0}, {-1, 1, 0}, {1, -1, 0}, {-1, -1, 0},
@@ -261,6 +151,7 @@ public class Board {
     public Tile[][] getBoardTable() { return boardTable; }
     public List<Entity> getPopulation() { return population; }
     public List<Island> getIslands() { return islands; }
+
     public void setBoardTable(Tile[][] table) { this.boardTable = table; }
     public void addEntityToPopulation(Entity e) { this.population.add(e); }
     public void addIsland(Island island) { this.islands.add(island); }

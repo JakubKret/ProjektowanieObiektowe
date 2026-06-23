@@ -12,7 +12,7 @@ public class SimulationWindow extends JFrame implements SimulationObserver {
     private final SimulationPanel panel;
 
     public SimulationWindow(Board board) {
-        setTitle("Epidemic Simulator (MVC)");
+        setTitle("Epidemic Simulator");
         setSize((int) (board.width * SimulationConfig.getInstance().scale), (int) (board.height * SimulationConfig.getInstance().scale));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 

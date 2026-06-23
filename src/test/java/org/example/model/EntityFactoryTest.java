@@ -10,7 +10,9 @@ public class EntityFactoryTest {
         Human human = EntityFactory.createHuman(5, 10);
         assertNotNull(human);
         assertTrue(human instanceof Entity);
+        assertTrue(human instanceof Human);
         assertEquals(5, human.getPosX());
+        assertEquals(10, human.getPosY());
     }
 
     @Test

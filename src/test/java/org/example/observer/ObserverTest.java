@@ -2,6 +2,7 @@ package org.example.observer;
 
 import org.example.model.Board;
 import org.example.model.SimulationConfig;
+import org.example.model.Tile;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ObserverTest {
+class ObserverTest {
 
     @Mock SimulationObserver mockObserver1;
     @Mock SimulationObserver mockObserver2;
@@ -23,6 +24,15 @@ public class ObserverTest {
     @Test
     void testBoardNotifiesObservers() {
         Board board = new Board();
+
+        Tile[][] dummyTable = new Tile[board.width][board.height];
+        for(int x=0; x<board.width; x++) {
+            for(int y=0; y<board.height; y++) {
+                dummyTable[x][y] = new Tile(0, x, y);
+            }
+        }
+        board.setBoardTable(dummyTable);
+
         board.addObserver(mockObserver1);
         board.addObserver(mockObserver2);
 
